@@ -1,0 +1,3301 @@
+Controllers/HomeController.cs:
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using CalendarEx.Models;
+using CalendarEx.DAL;
+using System.Globalization;
+
+namespace CalendarEx.Controllers
+{
+    public class HomeController : Controller
+    {
+        CalendarDAL objCalendarDAL = new CalendarDAL();
+        public ActionResult Index()
+        {
+            var model = objCalendarDAL.getCalender(DateTime.Now.Month, DateTime.Now.Year);
+            var data = objCalendarDAL.getCalender2(DateTime.Now.Month, DateTime.Now.Year);
+            model.CprevMonth = data.CprevMonth;
+            model.CnextMonth = data.CnextMonth;
+            model.CWeek1 = data.CWeek1;
+            model.CWeek2 = data.CWeek2;
+            model.CWeek3 = data.CWeek3;
+            model.CWeek4 = data.CWeek4;
+            model.CWeek5 = data.CWeek5;
+            model.CWeek6 = data.CWeek6;
+            //model.DayList = new List<WeekForMonth>();
+            //model.DaySelectlist = model.DayList.Select(x => new SelectListItem
+            //{
+            //    Text = x.Dayname,
+            //    Value = x.Dayid.ToString()
+            //});
+            //model.NumList = new List<WeekForMonth>();
+            //model.NumselectList = model.NumList.Select(x => new SelectListItem
+            //{
+            //    Text = x.Number,
+            //    Value = x.Numid.ToString()
+            //});
+            //model.MonthList = new List<WeekForMonth>();
+            //model.MonthselectList = model.MonthList.Select(x => new SelectListItem
+            //{
+            //    Text = x.Monthname,
+            //    Value = x.Monthid.ToString()
+            //});
+            return View(model);
+        }
+
+        public ActionResult AsyncUpdateCalender(int month, int year)
+        {
+            if (HttpContext.Request.IsAjaxRequest())
+            {
+                var model = objCalendarDAL.getCalender(month, year);
+                return Json(model, JsonRequestBehavior.AllowGet);
+            }
+            else
+            {
+                return View();
+            }
+        }
+
+        public ActionResult AsyncUpdateCalender2(int month, int year)
+        {
+            if (HttpContext.Request.IsAjaxRequest())
+            {
+                var model = objCalendarDAL.getCalender2(month, year);
+                return Json(model, JsonRequestBehavior.AllowGet);
+            }
+            else
+            {
+                return View();
+            }
+        }
+
+        public ActionResult SubmitCalender(string strFromdate, string strTodate, int Numid, int Dayid, int Monthid)
+        {
+            DateTime? Fromdate = null;
+            DateTime? Todate = null;
+
+            if (!string.IsNullOrEmpty(strFromdate))
+            {
+                Fromdate = DateTime.ParseExact(strFromdate, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault);
+            }
+            if (!string.IsNullOrEmpty(strTodate))
+            {
+                Todate = DateTime.ParseExact(strTodate, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault);
+            }
+
+            int Fyear = Fromdate.Value.Year;
+            int Tyear = Todate.Value.Year;
+            string CountDay = "";
+            if (Dayid == 1)
+                CountDay = "Sunday";
+            else if (Dayid == 2)
+                CountDay = "Monday";
+            else if (Dayid == 3)
+                CountDay = "Tuesday";
+            else if (Dayid == 4)
+                CountDay = "Wednesday";
+            else if (Dayid == 5)
+                CountDay = "Thursday";
+            else if (Dayid == 6)
+                CountDay = "Friday";
+            else if (Dayid == 7)
+                CountDay = "Saturday";
+
+            int AddMonth = 0;
+            if (Monthid == 1)
+                AddMonth = 1;
+            else if (Monthid == 2)
+                AddMonth = 3;
+            else if (Monthid == 3)
+                AddMonth = 6;
+            else if (Monthid == 4)
+                AddMonth = 12;
+
+            DateTime? StartDate = GetDates(Fromdate.Value.Year, Fromdate.Value.Month).First().Date;
+            CalendarDAL objCalendarDAL = new CalendarDAL();
+            WeekForMonth model = new WeekForMonth();
+            model.DateList = new List<WeekForMonth>();
+            for (int i = Fyear; i <= Tyear; i++)
+            {
+                int Month = StartDate.Value.Month;
+                for (int j = Month; j < 13; j++)
+                {
+                    if (StartDate <= Todate)
+                    {
+                        int Syear = StartDate.Value.Year;
+                        int SMonth = StartDate.Value.Month;
+                        int CountNumid = 0;
+                        var dateList = GetDates(Syear, SMonth);
+                        foreach (var day in dateList)
+                        {
+                            Day dy1 = new Day();
+                            dy1.Date = day;
+                            dy1._Date = day.ToShortDateString();
+                            dy1.dateStr = day.ToString("MM/dd/yyyy");
+                            dy1.dtDay = day.Day;
+                            string dayStr = Convert.ToString(day.DayOfWeek);
+                            //switch (Numid)
+                            //{
+                            //    case 1:
+                            //        if (dayStr.ToLower() == CountDay.ToLower())
+                            //        {
+                            //            WeekForMonth objWeekForMonth = new WeekForMonth();
+                            //            objWeekForMonth.Date = dy1.Date;
+                            //            model.DateList.Add(objWeekForMonth);
+                            //            StartDate = StartDate.Value.AddMonths(AddMonth);                                        
+                            //        }
+                            //        break;
+                            //    case 2:
+                            //        if (dayStr.ToLower() == CountDay.ToLower())
+                            //        {
+                            //            WeekForMonth objWeekForMonth = new WeekForMonth();
+                            //            objWeekForMonth.Date = dy1.Date;
+                            //            model.DateList.Add(objWeekForMonth);
+                            //            StartDate = StartDate.Value.AddMonths(AddMonth);                                        
+                            //        }
+                            //        break;
+                            //};
+                            if (dayStr.ToLower() == CountDay.ToLower())
+                            {
+                                WeekForMonth objWeekForMonth = new WeekForMonth();
+                                objWeekForMonth.Date1 = dy1.Date.ToShortDateString();
+                                CountNumid += 1;
+                                if (Numid == CountNumid && dy1.Date <= Todate)
+                                {
+                                    if (dy1.Date >= Fromdate)
+                                    {
+                                        model.DateList.Add(objWeekForMonth);
+                                    }
+                                    if (model.DateList.Count() > 0)
+                                    {
+                                        StartDate = StartDate.Value.AddMonths(AddMonth);                                    
+                                    }
+                                    else
+                                    {
+                                        StartDate = StartDate.Value.AddMonths(1);                                    
+                                    }
+                                    
+                                    break;
+                                }
+                                else if(dy1.Date > Todate)
+                                {
+                                    StartDate = StartDate.Value.AddMonths(AddMonth);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return Json(model.DateList.ToList(), JsonRequestBehavior.AllowGet);
+            //return View();
+        }
+        public static List<DateTime> GetDates(int year, int month)
+        {
+            return Enumerable.Range(1, DateTime.DaysInMonth(year, month))  // Days: 1, 2 ... 31 etc.
+            .Select(day => new DateTime(year, month, day)) // Map each day to a date
+            .ToList();
+        }
+
+        //get number of week for the selected month by passing in a date value
+        public static int GetWeekOfMonth(DateTime date)
+        {
+            DateTime beginningOfMonth = new DateTime(date.Year, date.Month, 1);
+            while (date.Date.AddDays(1).DayOfWeek != DayOfWeek.Sunday)
+                date = date.AddDays(1);
+            return (int)Math.Truncate((double)date.Subtract(beginningOfMonth).TotalDays / 7f) + 1;
+        }
+
+        //translate each day to a day number for mapping to week
+        public int GetDateInfo(DateTime now)
+        {
+            int dayNumber = 0;
+            DateTime dt = now.Date;
+            string dayStr = Convert.ToString(dt.DayOfWeek);
+
+            if (dayStr.ToLower() == "sunday")
+            {
+                dayNumber = 0;
+            }
+            else if (dayStr.ToLower() == "monday")
+            {
+                dayNumber = 1;
+            }
+            else if (dayStr.ToLower() == "tuesday")
+            {
+                dayNumber = 2;
+            }
+            else if (dayStr.ToLower() == "wednesday")
+            {
+                dayNumber = 3;
+            }
+            else if (dayStr.ToLower() == "thursday")
+            {
+                dayNumber = 4;
+            }
+            else if (dayStr.ToLower() == "friday")
+            {
+                dayNumber = 5;
+            }
+            else if (dayStr.ToLower() == "saturday")
+            {
+                dayNumber = 6;
+            }
+            return dayNumber;
+        }
+        private int GetMonthdetails(DateTime? FromDate, DateTime? ToDate)
+        {
+            int id = 0;
+            //if(FromDate)
+            return id;
+        }
+        public ActionResult About()
+        {
+            ViewBag.Message = "Your app description page.";
+
+            return View();
+        }
+
+        public ActionResult Contact()
+        {
+            ViewBag.Message = "Your contact page.";
+
+            return View();
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+Views/Home/Index.cshtml :
+
+
+@model CalendarEx.Models.WeekForMonth
+@{
+    ViewBag.Title = "Home Page";
+}
+
+<script src="~/Scripts/jquery-1.8.2.min.js"></script>
+<script src="~/Scripts/Calendar.js"></script>
+
+<script>
+    $('.dt').live('click', function () {
+        var date = $(this).attr('id').split('-');
+        var TDate = $('#CDate2').val();
+        var NewDate = date[1] + '/' + date[0] + '/' + date[2];
+        //var Fd = new Date(date[2],date[1]-1,date[0]);
+        //var Td = new Date(TDate).toDateString("dd/MM/yyyy");
+        //debugger;
+        //if (TDate != '' && TDate != undefined) {
+        //    if (Fd >= Td) {
+        //        alert('Fromdate is Large then Todate');
+        //        $('#CDate1').val('');
+        //        return false;
+        //    }
+        //}
+        $('#CDate1').val(NewDate);
+    });
+    $('.dt2').live('click', function () {
+        var Fdate = $('#CDate1').val();
+        var date = $(this).attr('id').split('-');
+        var NewDate = date[1] + '/' + date[0] + '/' + date[2];
+        //var Td = new Date(NewDate);
+        //var Fd = new Date(Fdate);
+        //debugger;
+        //if (Fdate != '' && Fdate != undefined) {
+        //    if (Td <= Fd) {
+        //        alert('Todate is Small then Fromdate');
+        //        $('#CDate2').val('');
+        //        return false;
+        //    }
+        //}
+        $('#CDate2').val(NewDate);
+    });
+</script>
+<div id="component-header" style="width:50%;float:left;">
+    <a id="@Model.prevMonth"
+       class="month" style="float:left;margin-left:10px;">Prev</a>
+    @DateTime.Now.ToString("MMM") @DateTime.Now.Year <a id="@Model.nextMonth"
+                                                        class="month" style="margin-right:10px;float:right;padding-right:250px;">Next</a>
+</div>
+<div id="component-header2" style="width:50%; float:right;">
+    <a id="@Model.CprevMonth"
+       class="Cmonth" style="float:left;margin-left:10px;">Prev</a>
+    @DateTime.Now.ToString("MMM") @DateTime.Now.Year <a id="@Model.CnextMonth"
+                                                        class="Cmonth" style="margin-right:10px;float:right;padding-right:250px;">Next</a>
+</div>
+
+<div style="width:50%;float:left;">
+    <table>
+        <tr>
+            <td>
+                <input type="text" name="cdate1" id="CDate1" readonly="readonly" />
+            </td>
+        </tr>
+    </table>
+</div>
+<div style="width:50%;float:right">
+    <table>
+        <tr>
+            <td>
+                <input type="text" name="cdate2" id="CDate2" readonly="readonly" />
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div style="width:50%;float:left;">
+    <table id="component-table">
+        <thead>
+            <tr>
+                <th>
+                    Sun
+                </th>
+                <th>
+                    Mon
+                </th>
+                <th>
+                    Tue
+                </th>
+                <th>
+                    Wed
+                </th>
+                <th>
+                    Thurs
+                </th>
+                <th>
+                    Fri
+                </th>
+                <th>
+                    Sat
+                </th>
+            </tr>
+        </thead>
+        <tbody style="height:500px;">
+            <tr id="week1">
+                @foreach (var item in Model.Week1)
+                {
+                    if (item != null)
+                    {
+                        if (item.daycolumn == 0 || item.daycolumn == 6)
+                        {
+                <td class="weekend">
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else if (item.Date != DateTime.Today)
+                        {
+                <td>
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else
+                        {
+                <td class="selected">
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                    }
+                    else
+                    {
+                <td></td>
+                    }
+                }
+            </tr>
+            <tr id="week2">
+                @foreach (var item in Model.Week2)
+                {
+                    if (item != null)
+                    {
+                        if (item.daycolumn == 0 || item.daycolumn == 6)
+                        {
+                <td class="weekend">
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else if (item.Date != DateTime.Today)
+                        {
+                <td>
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else
+                        {
+                <td class="selected">
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                    }
+                    else
+                    {
+                <td></td>
+                    }
+                }
+            </tr>
+            <tr id="week3">
+                @foreach (var item in Model.Week3)
+                {
+                    if (item != null)
+                    {
+                        if (item.daycolumn == 0 || item.daycolumn == 6)
+                        {
+                <td class="weekend">
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else if (item.Date != DateTime.Today)
+                        {
+                <td>
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else
+                        {
+                <td class="selected">
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                    }
+                    else
+                    {
+                <td></td>
+                    }
+                }
+            </tr>
+            <tr id="week4">
+                @foreach (var item in Model.Week4)
+                {
+                    if (item != null)
+                    {
+                        if (item.daycolumn == 0 || item.daycolumn == 6)
+                        {
+                <td class="weekend">
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else if (item.Date != DateTime.Today)
+                        {
+                <td>
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else
+                        {
+                <td class="selected">
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                    }
+                    else
+                    {
+                <td></td>
+                    }
+                }
+            </tr>
+            <tr id="week5">
+                @foreach (var item in Model.Week5)
+                {
+                    if (item != null)
+                    {
+                        if (item.daycolumn == 0 || item.daycolumn == 6)
+                        {
+                <td class="weekend">
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else if (item.Date != DateTime.Today)
+                        {
+                <td>
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else
+                        {
+                <td class="selected">
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                    }
+                    else
+                    {
+                <td></td>
+                    }
+                }
+            </tr>
+            <tr id="week6">
+                @if (Model.Week6 != null)
+                {
+                    foreach (var item in Model.Week6)
+                    {
+                        if (item != null)
+                        {
+                            if (item.daycolumn == 0 || item.daycolumn == 6)
+                            {
+                <td class="weekend">
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                            }
+                            else if (item.Date != DateTime.Today)
+                            {
+                <td>
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                            }
+                            else
+                            {
+                <td class="selected">
+                    <a id="@item.dateStr"
+                       class="dt"><h3>@item.dtDay</h3></a>
+                </td>
+                            }
+                        }
+                        else
+                        {
+                <td></td>
+                        }
+                    }
+                }
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+
+<div style="width:50%; float:right;">
+    <table id="component-table">
+        <thead>
+            <tr>
+                <th>
+                    Sun
+                </th>
+                <th>
+                    Mon
+                </th>
+                <th>
+                    Tue
+                </th>
+                <th>
+                    Wed
+                </th>
+                <th>
+                    Thurs
+                </th>
+                <th>
+                    Fri
+                </th>
+                <th>
+                    Sat
+                </th>
+            </tr>
+        </thead>
+        <tbody style="height:500px;">
+            <tr id="Cweek1">
+                @foreach (var item in Model.CWeek1)
+                {
+                    if (item != null)
+                    {
+                        if (item.daycolumn == 0 || item.daycolumn == 6)
+                        {
+                            <td class="weekend">
+                                <a id="@item.dateStr"
+                                   class="dt2"><h3>@item.dtDay</h3></a>
+                            </td>
+                        }
+                        else if (item.Date != DateTime.Today)
+                        {
+                            <td>
+                                <a id="@item.dateStr"
+                                   class="dt2"><h3>@item.dtDay</h3></a>
+                            </td>
+                        }
+                        else
+                        {
+                            <td class="selected">
+                                <a id="@item.dateStr"
+                                   class="dt2"><h3>@item.dtDay</h3></a>
+                            </td>
+                        }
+                    }
+                    else
+                    {
+                        <td></td>
+                    }
+                }
+            </tr>
+            <tr id="Cweek2">
+                @foreach (var item in Model.CWeek2)
+                {
+                    if (item != null)
+                    {
+                        if (item.daycolumn == 0 || item.daycolumn == 6)
+                        {
+                <td class="weekend">
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else if (item.Date != DateTime.Today)
+                        {
+                <td>
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else
+                        {
+                <td class="selected">
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                    }
+                    else
+                    {
+                <td></td>
+                    }
+                }
+            </tr>
+            <tr id="Cweek3">
+                @foreach (var item in Model.CWeek3)
+                {
+                    if (item != null)
+                    {
+                        if (item.daycolumn == 0 || item.daycolumn == 6)
+                        {
+                <td class="weekend">
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else if (item.Date != DateTime.Today)
+                        {
+                <td>
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else
+                        {
+                <td class="selected">
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                    }
+                    else
+                    {
+                <td></td>
+                    }
+                }
+            </tr>
+            <tr id="Cweek4">
+                @foreach (var item in Model.CWeek4)
+                {
+                    if (item != null)
+                    {
+                        if (item.daycolumn == 0 || item.daycolumn == 6)
+                        {
+                <td class="weekend">
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else if (item.Date != DateTime.Today)
+                        {
+                <td>
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else
+                        {
+                <td class="selected">
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                    }
+                    else
+                    {
+                <td></td>
+                    }
+                }
+            </tr>
+            <tr id="Cweek5">
+                @foreach (var item in Model.CWeek5)
+                {
+                    if (item != null)
+                    {
+                        if (item.daycolumn == 0 || item.daycolumn == 6)
+                        {
+                <td class="weekend">
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else if (item.Date != DateTime.Today)
+                        {
+                <td>
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                        else
+                        {
+                <td class="selected">
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                        }
+                    }
+                    else
+                    {
+                <td></td>
+                    }
+                }
+            </tr>
+            <tr id="Cweek6">
+                @if (Model.Week6 != null)
+                {
+                    foreach (var item in Model.CWeek6)
+                    {
+                        if (item != null)
+                        {
+                            if (item.daycolumn == 0 || item.daycolumn == 6)
+                            {
+                <td class="weekend">
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                            }
+                            else if (item.Date != DateTime.Today)
+                            {
+                <td>
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                            }
+                            else
+                            {
+                <td class="selected">
+                    <a id="@item.dateStr"
+                       class="dt2"><h3>@item.dtDay</h3></a>
+                </td>
+                            }
+                        }
+                        else
+                        {
+                <td></td>
+                        }
+                    }
+                }
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div>
+    <table>
+        <tr>
+            <td>
+                
+                @Html.DropDownList("Numid", new List<SelectListItem>()
+                   {
+                       new SelectListItem {Text="Select",Value="0"},
+                       new SelectListItem {Text="First",Value="1"},
+                       new SelectListItem {Text="Second",Value="2"},
+                       new SelectListItem {Text="Third",Value="3"},
+                       new SelectListItem {Text="Fourth",Value="4"}
+                   }, new { @id = "ddlNum" })
+            </td>
+            <td>
+                @*@Html.DropDownListFor(m => m.Dayid, Model.DaySelectlist, "Select", new { @id = "ddlDay" })*@
+                @Html.DropDownList("Dayid", new List<SelectListItem>()
+                   {
+                       new SelectListItem {Text="Select",Value="0"},
+                       new SelectListItem {Text="Sunday",Value="1"},
+                       new SelectListItem {Text="Monday",Value="2"},
+                       new SelectListItem {Text="Tuesday",Value="3"},
+                       new SelectListItem {Text="Wednesday",Value="4"},
+                       new SelectListItem {Text="Thurseday",Value="5"},
+                       new SelectListItem {Text="Friday",Value="6"},
+                       new SelectListItem {Text="Saturday",Value="7"},
+                   }, new { @id = "ddlDay" })
+            </td>
+            <td>
+                @*@Html.DropDownListFor(m => m.Monthid, Model.MonthselectList, "Select", new { @id = "ddlMonth" })*@
+                @Html.DropDownList("Monthid", new List<SelectListItem>()
+                   {
+                       new SelectListItem {Text="Select",Value="0"},
+                       new SelectListItem {Text="1 Month",Value="1"},
+                       new SelectListItem {Text="3 Month",Value="2"},
+                       new SelectListItem {Text="6 Month",Value="3"},
+                       new SelectListItem {Text="1 Year",Value="4"}
+                   }, new { @id = "ddlMonth" })
+            </td>
+        </tr>
+        <tr>
+            <td style="height:5px;"></td>
+        </tr>
+        <tr>
+            <td>
+                <input type="button" name="submit" value="Submit" id="btnSubmit" />
+            </td>
+        </tr>
+    </table>
+</div>
+<div id ="DisplayDateList">
+
+</div>
+
+
+
+
+
+
+
+
+Scripts/Calender.js
+
+
+function getMonth(abc) {
+    var monthNames = ["January", "February", "March", "April", "May", "June",
+ "July", "August", "September", "October", "November", "December"];
+    return monthNames[abc - 1];
+}
+function getTodayDate() {
+    var today = new Date();
+    var dd = today.getDate();
+    var mm = today.getMonth() + 1; //January is 0!
+    var yyyy = today.getFullYear();
+
+    if (dd < 10) {
+        dd = '0' + dd
+    }
+
+    if (mm < 10) {
+        mm = '0' + mm
+    }
+
+    today = mm + '/' + dd + '/' + yyyy;
+
+    return today;
+}
+
+$(".month").live('click', function () {
+    var object = $(this).attr("id");
+    var str = object.split('/');
+    // str[0] contains "month"
+    // str[1] contains "year"
+    $.ajax
+    ({
+        url: '../../Home/AsyncUpdateCalender',
+        type: 'GET',
+        traditional: true,
+        contentType: 'application/json',
+        data: { month: str[0], year: str[1] },
+        success: function (result) {
+            if (!jQuery.isEmptyObject(result)) {
+                var week1 = $("#week1");
+                week1.empty();
+                var week2 = $("#week2");
+                week2.empty();
+                var week3 = $("#week3");
+                week3.empty();
+                var week4 = $("#week4");
+                week4.empty();
+                var week5 = $("#week5");
+                week5.empty();
+                var week6 = $("#week6");
+                week6.empty();
+                var newHeader = $('<a id=' + result.prevMonth + ' class="month" ' + 
+                  'style="float:left">Prev</a>' + getMonth(str[0]) + ' ' + 
+                  str[1] + '<a id=' + result.nextMonth + 
+                  ' class="month" style="float:right;padding-right:250px;">Next</a>');
+                $("#component-header").empty();
+                $("#component-header").append(newHeader);
+                $.each(result.Week1, function (i, item) {
+                    var htmlStr = null;
+                    if (jQuery.isEmptyObject(item)) {
+                        htmlStr = $('<td></td>');
+                        week1.append(htmlStr);
+                    } else {
+                        if (item.daycolumn == 0 || item.daycolumn == 6) {
+                            htmlStr = $('<td class="weekend"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3></a>');
+                        }
+                                                
+                        else if (item._Date != getTodayDate()) {                                
+                            htmlStr = $('<td></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3></a>');
+                        } else {
+                            htmlStr = $('<td class="selected"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3></a>');
+                        }
+                        week1.append(htmlStr);
+                    }
+                });
+                $.each(result.Week2, function (i, item) {
+                    var htmlStr = null;
+                    if (jQuery.isEmptyObject(item)) {
+                        htmlStr = $('<td></td>');
+                        week2.append(htmlStr);
+                    } else {
+                        if (item.daycolumn == 0 || item.daycolumn == 6) {
+                            htmlStr = $('<td class="weekend"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        else if (item.Date != getTodayDate()) {
+                            htmlStr = $('<td></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3> </a>');
+                        } else {
+                            htmlStr = $('<td class="selected"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        week2.append(htmlStr);
+                    }
+                });
+                $.each(result.Week3, function (i, item) {
+                    var htmlStr = null;
+                    if (jQuery.isEmptyObject(item)) {
+                        htmlStr = $('<td></td>');
+                        week3.append(htmlStr);
+                    } else {
+                        if (item.daycolumn == 0 || item.daycolumn == 6) {
+                            htmlStr = $('<td class="weekend"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        else if (item.Date != getTodayDate()) {
+                            htmlStr = $('<td></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3> </a>');
+                        } else {
+                            htmlStr = $('<td class="selected"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + 
+                              item.dtDay + '</h3> </a>');
+                        }
+                        week3.append(htmlStr);
+                    }
+                });
+                $.each(result.Week4, function (i, item) {
+                    var htmlStr = null;
+                    if (jQuery.isEmptyObject(item)) {
+                        htmlStr = $('<td></td>');
+                        week4.append(htmlStr);
+                    } else {
+                        if (item.daycolumn == 0 || item.daycolumn == 6) {
+                            htmlStr = $('<td class="weekend"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        else if (item.Date != getTodayDate()) {
+                            htmlStr = $('<td></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3> </a>');
+                        } else {
+                            htmlStr = $('<td class="selected"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        week4.append(htmlStr);
+                    }
+                });
+                $.each(result.Week5, function (i, item) {
+                    var htmlStr = null;
+                    if (jQuery.isEmptyObject(item)) {
+                        htmlStr = $('<td></td>');
+                        week5.append(htmlStr);
+                    } else {
+                        if (item.daycolumn == 0 || item.daycolumn == 6) {
+                            htmlStr = $('<td class="weekend"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        else if (item.Date != getTodayDate()) {
+                            htmlStr = $('<td></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3> </a>');
+                        } else {
+                            htmlStr = $('<td class="selected"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        week5.append(htmlStr);
+                    }
+                });
+                $.each(result.Week6, function (i, item) {
+                    var htmlStr = null;
+                    if (jQuery.isEmptyObject(item)) {
+                        htmlStr = $('<td></td>');
+                        week6.append(htmlStr);
+                    } else {
+                        if (item.daycolumn == 0 || item.daycolumn == 6) {
+                            htmlStr = $('<td class="weekend"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        else if (item.Date != getTodayDate()) {
+                            htmlStr = $('<td></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3> </a>');
+                        } else {
+                            htmlStr = $('<td class="selected"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr + 
+                              ' class="dt"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        week6.append(htmlStr);
+                    }
+                });
+                $("#component-table").trigger("update");
+            } else {
+                alertMsg('Oops, errors occur in retrieving calender');
+            }
+        }
+    });
+});
+
+$(".Cmonth").live('click', function () {
+    var object = $(this).attr("id");
+    var str = object.split('/');
+    // str[0] contains "month"
+    // str[1] contains "year"
+    $.ajax
+    ({
+        url: '../../Home/AsyncUpdateCalender2',
+        type: 'GET',
+        traditional: true,
+        contentType: 'application/json',
+        data: { month: str[0], year: str[1] },
+        success: function (result) {
+            if (!jQuery.isEmptyObject(result)) {
+                var week1 = $("#Cweek1");
+                week1.empty();
+                var week2 = $("#Cweek2");
+                week2.empty();
+                var week3 = $("#Cweek3");
+                week3.empty();
+                var week4 = $("#Cweek4");
+                week4.empty();
+                var week5 = $("#Cweek5");
+                week5.empty();
+                var week6 = $("#Cweek6");
+                week6.empty();
+                var newHeader = $('<a id=' + result.CprevMonth + ' class="Cmonth" ' +
+                  'style="float:left">Prev</a>' + getMonth(str[0]) + ' ' +
+                  str[1] + '<a id=' + result.CnextMonth +
+                  ' class="Cmonth" style="float:right;padding-right:250px;">Next</a>');
+                $("#component-header2").empty();
+                $("#component-header2").append(newHeader);
+                $.each(result.CWeek1, function (i, item) {
+                    var htmlStr = null;
+                    if (jQuery.isEmptyObject(item)) {
+                        htmlStr = $('<td></td>');
+                        week1.append(htmlStr);
+                    } else {
+                        if (item.daycolumn == 0 || item.daycolumn == 6) {
+                            htmlStr = $('<td class="weekend"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3></a>');
+                        }
+
+                        else if (item._Date != getTodayDate()) {
+                            htmlStr = $('<td></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3></a>');
+                        } else {
+                            htmlStr = $('<td class="selected"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3></a>');
+                        }
+                        week1.append(htmlStr);
+                    }
+                });
+                $.each(result.CWeek2, function (i, item) {
+                    var htmlStr = null;
+                    if (jQuery.isEmptyObject(item)) {
+                        htmlStr = $('<td></td>');
+                        week2.append(htmlStr);
+                    } else {
+                        if (item.daycolumn == 0 || item.daycolumn == 6) {
+                            htmlStr = $('<td class="weekend"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        else if (item.Date != getTodayDate()) {
+                            htmlStr = $('<td></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3> </a>');
+                        } else {
+                            htmlStr = $('<td class="selected"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        week2.append(htmlStr);
+                    }
+                });
+                $.each(result.CWeek3, function (i, item) {
+                    var htmlStr = null;
+                    if (jQuery.isEmptyObject(item)) {
+                        htmlStr = $('<td></td>');
+                        week3.append(htmlStr);
+                    } else {
+                        if (item.daycolumn == 0 || item.daycolumn == 6) {
+                            htmlStr = $('<td class="weekend"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        else if (item.Date != getTodayDate()) {
+                            htmlStr = $('<td></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3> </a>');
+                        } else {
+                            htmlStr = $('<td class="selected"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' +
+                              item.dtDay + '</h3> </a>');
+                        }
+                        week3.append(htmlStr);
+                    }
+                });
+                $.each(result.CWeek4, function (i, item) {
+                    var htmlStr = null;
+                    if (jQuery.isEmptyObject(item)) {
+                        htmlStr = $('<td></td>');
+                        week4.append(htmlStr);
+                    } else {
+                        if (item.daycolumn == 0 || item.daycolumn == 6) {
+                            htmlStr = $('<td class="weekend"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        else if (item.Date != getTodayDate()) {
+                            htmlStr = $('<td></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3> </a>');
+                        } else {
+                            htmlStr = $('<td class="selected"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        week4.append(htmlStr);
+                    }
+                });
+                $.each(result.CWeek5, function (i, item) {
+                    var htmlStr = null;
+                    if (jQuery.isEmptyObject(item)) {
+                        htmlStr = $('<td></td>');
+                        week5.append(htmlStr);
+                    } else {
+                        if (item.daycolumn == 0 || item.daycolumn == 6) {
+                            htmlStr = $('<td class="weekend"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        else if (item.Date != getTodayDate()) {
+                            htmlStr = $('<td></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3> </a>');
+                        } else {
+                            htmlStr = $('<td class="selected"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        week5.append(htmlStr);
+                    }
+                });
+                $.each(result.CWeek6, function (i, item) {
+                    var htmlStr = null;
+                    if (jQuery.isEmptyObject(item)) {
+                        htmlStr = $('<td></td>');
+                        week6.append(htmlStr);
+                    } else {
+                        if (item.daycolumn == 0 || item.daycolumn == 6) {
+                            htmlStr = $('<td class="weekend"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        else if (item.Date != getTodayDate()) {
+                            htmlStr = $('<td></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3> </a>');
+                        } else {
+                            htmlStr = $('<td class="selected"></td>');
+                            htmlStr.append('<a   id=' + item.dateStr +
+                              ' class="dt2"><h3>' + item.dtDay + '</h3> </a>');
+                        }
+                        week6.append(htmlStr);
+                    }
+                });
+                $("#component-table").trigger("update");
+            } else {
+                alertMsg('Oops, errors occur in retrieving calender');
+            }
+        }
+    });
+});
+
+$('#btnSubmit').live('click', function () {
+    debugger;
+    var FDate = $('#CDate1').val();
+    var TDate = $('#CDate2').val();
+    var Numid = $('#ddlNum').val();
+    var Dayid = $('#ddlDay').val();
+    var Monthid = $('#ddlMonth').val();
+    var msg = 0;
+
+    if (FDate == '' || FDate == undefined) {
+        $("#CDate1").css("border", "1px solid red");
+        setTimeout(function () {
+            $("#CDate1").css("border", "");
+        }, 10000);
+        msg += 1;
+    }
+    if (TDate == '' || TDate == undefined) {
+        $("#CDate2").css("border", "1px solid red");
+        setTimeout(function () {
+            $("#CDate2").css("border", "");
+        }, 10000);
+        msg += 1;
+    }    
+    if (Numid == '' || Numid == "0" || Numid == undefined) {
+        $("#ddlNum").css("border", "1px solid red");
+        setTimeout(function () {
+            $("#ddlNum").css("border", "");
+        }, 10000);
+        msg += 1;
+    }
+    if (Dayid == '' || Dayid == "0" || Dayid == undefined) {
+        $("#ddlDay").css("border", "1px solid red");
+        setTimeout(function () {
+            $("#ddlDay").css("border", "");
+        }, 10000);
+        msg += 1;
+    }
+    if (Monthid == '' || Monthid == "0" || Monthid == undefined) {
+        $("#ddlMonth").css("border", "1px solid red");
+        setTimeout(function () {
+            $("#ddlMonth").css("border", "");
+        }, 10000);
+        msg += 1;
+    }
+
+    if (msg > 0) {
+        return false;
+    }
+
+    $.ajax({
+        url: "/Home/SubmitCalender",
+        type: "GET",
+        data: { strFromdate: FDate, strTodate: TDate, Numid: Numid, Dayid: Dayid, Monthid: Monthid },
+        success: function (result) {
+            if (result != '') {
+                $('#DisplayDateList').empty();
+                $.each(result, function (i, item) {
+                    $('#DisplayDateList').append('<p>' + item.Date1 + '</p><br/>');
+                });
+            }
+        }
+    });
+});
+
+
+
+
+
+
+DAL/CalendarDAL.cs
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using CalendarEx.Models;
+
+namespace CalendarEx.DAL
+{
+    public class CalendarDAL
+    {
+        public WeekForMonth getCalender(int month, int year)
+        {
+
+            WeekForMonth weeks = new WeekForMonth();
+            weeks.Week1 = new List<Day>();
+            weeks.Week2 = new List<Day>();
+            weeks.Week3 = new List<Day>();
+            weeks.Week4 = new List<Day>();
+            weeks.Week5 = new List<Day>();
+            weeks.Week6 = new List<Day>();
+
+            List<DateTime> dt = new List<DateTime>();
+            dt = GetDates(year, month);
+
+            foreach (DateTime day in dt)
+            {
+                switch (GetWeekOfMonth(day))
+                {
+                    case 1:
+                        Day dy1 = new Day();
+
+                        dy1.Date = day;
+                        dy1._Date = day.ToShortDateString();
+                        dy1.dateStr = day.ToString("MM/dd/yyyy");
+                        dy1.dtDay = day.Day;
+                        dy1.daycolumn = GetDateInfo(dy1.Date);
+                        weeks.Week1.Add(dy1);
+                        break;
+                    case 2:
+                        Day dy2 = new Day();
+                        dy2.Date = day;
+                        dy2._Date = day.ToShortDateString();
+                        dy2.dateStr = day.ToString("MM/dd/yyyy");
+                        dy2.dtDay = day.Day;
+                        dy2.daycolumn = GetDateInfo(dy2.Date);
+                        weeks.Week2.Add(dy2);
+                        break;
+                    case 3:
+                        Day dy3 = new Day();
+                        dy3.Date = day;
+                        dy3._Date = day.ToShortDateString();
+                        dy3.dateStr = day.ToString("MM/dd/yyyy");
+                        dy3.dtDay = day.Day;
+                        dy3.daycolumn = GetDateInfo(dy3.Date);
+                        weeks.Week3.Add(dy3);
+                        break;
+                    case 4:
+                        Day dy4 = new Day();
+                        dy4.Date = day;
+                        dy4._Date = day.ToShortDateString();
+                        dy4.dateStr = day.ToString("MM/dd/yyyy");
+                        dy4.dtDay = day.Day;
+                        dy4.daycolumn = GetDateInfo(dy4.Date);
+                        weeks.Week4.Add(dy4);
+                        break;
+                    case 5:
+                        Day dy5 = new Day();
+                        dy5.Date = day;
+                        dy5._Date = day.ToShortDateString();
+                        dy5.dateStr = day.ToString("MM/dd/yyyy");
+                        dy5.dtDay = day.Day;
+                        dy5.daycolumn = GetDateInfo(dy5.Date);
+                        weeks.Week5.Add(dy5);
+                        break;
+                    case 6:
+                        Day dy6 = new Day();
+                        dy6.Date = day;
+                        dy6._Date = day.ToShortDateString();
+                        dy6.dateStr = day.ToString("MM/dd/yyyy");
+                        dy6.dtDay = day.Day;
+                        dy6.daycolumn = GetDateInfo(dy6.Date);
+                        weeks.Week6.Add(dy6);
+                        break;
+                };
+            }
+
+            while (weeks.Week1.Count < 7) // not starting from sunday
+            {
+                Day dy = null;
+                weeks.Week1.Insert(0, dy);
+            }
+
+            if (month == 12)
+            {
+                weeks.nextMonth = (01).ToString() + "/" + (year + 1).ToString();
+                weeks.prevMonth = (month - 1).ToString() + "/" + (year).ToString();
+            }
+            else if (month == 1)
+            {
+                weeks.nextMonth = (month + 1).ToString() + "/" + (year).ToString();
+                weeks.prevMonth = (12).ToString() + "/" + (year - 1).ToString();
+            }
+            else
+            {
+                weeks.nextMonth = (month + 1).ToString() + "/" + (year).ToString();
+                weeks.prevMonth = (month - 1).ToString() + "/" + (year).ToString();
+            }
+
+            return weeks;
+        }
+
+        public WeekForMonth getCalender2(int month, int year)
+        {
+
+            WeekForMonth weeks = new WeekForMonth();
+            weeks.CWeek1 = new List<Day>();
+            weeks.CWeek2 = new List<Day>();
+            weeks.CWeek3 = new List<Day>();
+            weeks.CWeek4 = new List<Day>();
+            weeks.CWeek5 = new List<Day>();
+            weeks.CWeek6 = new List<Day>();
+
+            List<DateTime> dt = new List<DateTime>();
+            dt = GetDates(year, month);
+
+            foreach (DateTime day in dt)
+            {
+                switch (GetWeekOfMonth(day))
+                {
+                    case 1:
+                        Day dy1 = new Day();
+
+                        dy1.Date = day;
+                        dy1._Date = day.ToShortDateString();
+                        dy1.dateStr = day.ToString("MM/dd/yyyy");
+                        dy1.dtDay = day.Day;
+                        dy1.daycolumn = GetDateInfo(dy1.Date);
+                        weeks.CWeek1.Add(dy1);
+                        break;
+                    case 2:
+                        Day dy2 = new Day();
+                        dy2.Date = day;
+                        dy2._Date = day.ToShortDateString();
+                        dy2.dateStr = day.ToString("MM/dd/yyyy");
+                        dy2.dtDay = day.Day;
+                        dy2.daycolumn = GetDateInfo(dy2.Date);
+                        weeks.CWeek2.Add(dy2);
+                        break;
+                    case 3:
+                        Day dy3 = new Day();
+                        dy3.Date = day;
+                        dy3._Date = day.ToShortDateString();
+                        dy3.dateStr = day.ToString("MM/dd/yyyy");
+                        dy3.dtDay = day.Day;
+                        dy3.daycolumn = GetDateInfo(dy3.Date);
+                        weeks.CWeek3.Add(dy3);
+                        break;
+                    case 4:
+                        Day dy4 = new Day();
+                        dy4.Date = day;
+                        dy4._Date = day.ToShortDateString();
+                        dy4.dateStr = day.ToString("MM/dd/yyyy");
+                        dy4.dtDay = day.Day;
+                        dy4.daycolumn = GetDateInfo(dy4.Date);
+                        weeks.CWeek4.Add(dy4);
+                        break;
+                    case 5:
+                        Day dy5 = new Day();
+                        dy5.Date = day;
+                        dy5._Date = day.ToShortDateString();
+                        dy5.dateStr = day.ToString("MM/dd/yyyy");
+                        dy5.dtDay = day.Day;
+                        dy5.daycolumn = GetDateInfo(dy5.Date);
+                        weeks.CWeek5.Add(dy5);
+                        break;
+                    case 6:
+                        Day dy6 = new Day();
+                        dy6.Date = day;
+                        dy6._Date = day.ToShortDateString();
+                        dy6.dateStr = day.ToString("MM/dd/yyyy");
+                        dy6.dtDay = day.Day;
+                        dy6.daycolumn = GetDateInfo(dy6.Date);
+                        weeks.CWeek6.Add(dy6);
+                        break;
+                };
+            }
+
+            while (weeks.CWeek1.Count < 7) // not starting from sunday
+            {
+                Day dy = null;
+                weeks.CWeek1.Insert(0, dy);
+            }
+
+            if (month == 12)
+            {
+                weeks.CnextMonth = (01).ToString() + "/" + (year + 1).ToString();
+                weeks.CprevMonth = (month - 1).ToString() + "/" + (year).ToString();
+            }
+            else if (month == 1)
+            {
+                weeks.CnextMonth = (month + 1).ToString() + "/" + (year).ToString();
+                weeks.CprevMonth = (12).ToString() + "/" + (year - 1).ToString();
+            }
+            else
+            {
+                weeks.CnextMonth = (month + 1).ToString() + "/" + (year).ToString();
+                weeks.CprevMonth = (month - 1).ToString() + "/" + (year).ToString();
+            }
+
+            return weeks;
+        }
+
+        //get all dates for a month for the year specified
+        public static List<DateTime> GetDates(int year, int month)
+        {
+            return Enumerable.Range(1, DateTime.DaysInMonth(year, month))  // Days: 1, 2 ... 31 etc.
+            .Select(day => new DateTime(year, month, day)) // Map each day to a date
+            .ToList();
+        }
+
+        //get number of week for the selected month by passing in a date value
+        public static int GetWeekOfMonth(DateTime date)
+        {
+            DateTime beginningOfMonth = new DateTime(date.Year, date.Month, 1);
+            while (date.Date.AddDays(1).DayOfWeek != DayOfWeek.Sunday)
+                date = date.AddDays(1);
+            return (int)Math.Truncate((double)date.Subtract(beginningOfMonth).TotalDays / 7f) + 1;
+        }
+
+        //translate each day to a day number for mapping to week
+        public int GetDateInfo(DateTime now)
+        {
+            int dayNumber = 0;
+            DateTime dt = now.Date;
+            string dayStr = Convert.ToString(dt.DayOfWeek);
+
+            if (dayStr.ToLower() == "sunday")
+            {
+                dayNumber = 0;
+            }
+            else if (dayStr.ToLower() == "monday")
+            {
+                dayNumber = 1;
+            }
+            else if (dayStr.ToLower() == "tuesday")
+            {
+                dayNumber = 2;
+            }
+            else if (dayStr.ToLower() == "wednesday")
+            {
+                dayNumber = 3;
+            }
+            else if (dayStr.ToLower() == "thursday")
+            {
+                dayNumber = 4;
+            }
+            else if (dayStr.ToLower() == "friday")
+            {
+                dayNumber = 5;
+            }
+            else if (dayStr.ToLower() == "saturday")
+            {
+                dayNumber = 6;
+            }
+            return dayNumber;
+        }
+    }
+}
+
+
+
+
+
+
+
+Content/Site.css
+
+html {
+    background-color: #e2e2e2;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: #fff;
+    border-top: solid 10px #000;
+    color: #333;
+    font-size: .85em;
+    font-family: "Segoe UI", Verdana, Helvetica, Sans-Serif;
+    margin: 0;
+    padding: 0;
+}
+
+a {
+    color: #333;
+    outline: none;
+    padding-left: 3px;
+    padding-right: 3px;
+    text-decoration: underline;
+}
+
+    a:link, a:visited,
+    a:active, a:hover {
+        color: #333;
+    }
+
+    a:hover {
+        background-color: #c7d1d6;
+    }
+
+header, footer, hgroup,
+nav, section {
+    display: block;
+}
+
+mark {
+    background-color: #a6dbed;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.float-left {
+    float: left;
+}
+
+.float-right {
+    float: right;
+}
+
+.clear-fix:after {
+    content: ".";
+    clear: both;
+    display: block;
+    height: 0;
+    visibility: hidden;
+}
+
+h1, h2, h3,
+h4, h5, h6 {
+    color: #000;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+h1 {
+    font-size: 2em;
+}
+
+h2 {
+    font-size: 1.75em;
+}
+
+h3 {
+    font-size: 1.2em;
+}
+
+h4 {
+    font-size: 1.1em;
+}
+
+h5, h6 {
+    font-size: 1em;
+}
+
+    h5 a:link, h5 a:visited, h5 a:active {
+        padding: 0;
+        text-decoration: none;
+    }
+
+
+/* main layout
+----------------------------------------------------------*/
+.content-wrapper {
+    margin: 0 auto;
+    max-width: 960px;
+}
+
+#body {
+    background-color: #efeeef;
+    clear: both;
+    padding-bottom: 35px;
+}
+
+    .main-content {
+        background: url("../Images/accent.png") no-repeat;
+        padding-left: 10px;
+        padding-top: 30px;
+    }
+
+    .featured + .main-content {
+        background: url("../Images/heroAccent.png") no-repeat;
+    }
+
+header .content-wrapper {
+    padding-top: 20px; 
+}
+
+footer {
+    clear: both;
+    background-color: #e2e2e2;
+    font-size: .8em;
+    height: 100px;
+}
+
+
+/* site title
+----------------------------------------------------------*/
+.site-title {
+    color: #c8c8c8;
+    font-family: Rockwell, Consolas, "Courier New", Courier, monospace;
+    font-size: 2.3em;
+    margin: 0;
+}
+
+.site-title a, .site-title a:hover, .site-title a:active {
+    background: none;
+    color: #c8c8c8;
+    outline: none;
+    text-decoration: none;
+}
+
+
+/* login
+----------------------------------------------------------*/
+#login {
+    display: block;
+    font-size: .85em;
+    margin: 0 0 10px;
+    text-align: right;
+}
+
+    #login a {
+        background-color: #d3dce0;
+        margin-left: 10px;
+        margin-right: 3px;
+        padding: 2px 3px;
+        text-decoration: none;
+    }
+
+    #login a.username {
+        background: none;
+        margin: 0;
+        padding: 0;
+        text-decoration: underline;
+    }
+
+    #login ul {
+        margin: 0;
+    }
+
+    #login li {
+        display: inline;
+        list-style: none;
+    }
+
+
+/* menu
+----------------------------------------------------------*/
+ul#menu {
+    font-size: 1.3em;
+    font-weight: 600;
+    margin: 0 0 5px;
+    padding: 0;
+    text-align: right;
+}
+
+    ul#menu li {
+        display: inline;
+        list-style: none;
+        padding-left: 15px;
+    }
+
+        ul#menu li a {
+            background: none;
+            color: #999;
+            text-decoration: none;
+        }
+
+        ul#menu li a:hover {
+            color: #333;
+            text-decoration: none;
+        }
+
+
+/* page elements
+----------------------------------------------------------*/
+/* featured */
+.featured {
+    background-color: #fff;
+}
+
+    .featured .content-wrapper {
+        background-color: #7ac0da;
+        background-image: -ms-linear-gradient(left, #7ac0da 0%, #a4d4e6 100%);
+        background-image: -o-linear-gradient(left, #7ac0da 0%, #a4d4e6 100%);
+        background-image: -webkit-gradient(linear, left top, right top, color-stop(0, #7ac0da), color-stop(1, #a4d4e6));
+        background-image: -webkit-linear-gradient(left, #7ac0da 0%, #a4d4e6 100%);
+        background-image: linear-gradient(left, #7ac0da 0%, #a4d4e6 100%);
+        color: #3e5667;
+        padding: 20px 40px 30px 40px;
+    }
+
+        .featured hgroup.title h1, .featured hgroup.title h2 {
+            color: #fff;
+        }
+
+        .featured p {
+            font-size: 1.1em;
+        }
+
+/* page titles */
+hgroup.title {
+    margin-bottom: 10px;
+}
+
+hgroup.title h1, hgroup.title h2 {
+    display: inline;
+}
+
+hgroup.title h2 {
+    font-weight: normal;
+    margin-left: 3px;
+}
+
+/* features */
+section.feature {
+    width: 300px;
+    float: left;
+    padding: 10px;
+}
+
+/* ordered list */
+ol.round {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+    ol.round li {
+        margin: 25px 0;
+        padding-left: 45px;
+    }
+
+        ol.round li.zero {
+            background: url("../Images/orderedList0.png") no-repeat;
+        }
+
+        ol.round li.one {
+            background: url("../Images/orderedList1.png") no-repeat;
+        }
+
+        ol.round li.two {
+            background: url("../Images/orderedList2.png") no-repeat;
+        }
+
+        ol.round li.three {
+            background: url("../Images/orderedList3.png") no-repeat;
+        }
+
+        ol.round li.four {
+            background: url("../Images/orderedList4.png") no-repeat;
+        }
+
+        ol.round li.five {
+            background: url("../Images/orderedList5.png") no-repeat;
+        }
+
+        ol.round li.six {
+            background: url("../Images/orderedList6.png") no-repeat;
+        }
+
+        ol.round li.seven {
+            background: url("../Images/orderedList7.png") no-repeat;
+        }
+
+        ol.round li.eight {
+            background: url("../Images/orderedList8.png") no-repeat;
+        }
+
+        ol.round li.nine {
+            background: url("../Images/orderedList9.png") no-repeat;
+        }
+
+/* content */
+article {
+    float: left;
+    width: 70%;
+}
+
+aside {
+    float: right;
+    width: 25%;
+}
+
+    aside ul {
+        list-style: none;
+        padding: 0;
+    }
+
+        aside ul li {
+            background: url("../Images/bullet.png") no-repeat 0 50%;
+            padding: 2px 0 2px 20px;
+        }
+
+.label {
+    font-weight: 700;
+}
+
+/* login page */
+#loginForm {
+    border-right: solid 2px #c8c8c8;
+    float: left;
+    width: 55%;
+}
+
+    #loginForm .validation-error {
+        display: block;
+        margin-left: 15px;
+    }
+
+    #loginForm .validation-summary-errors ul {
+        margin: 0;
+        padding: 0;
+    }
+
+    #loginForm .validation-summary-errors li {
+        display: inline;
+        list-style: none;
+        margin: 0;
+    }
+
+    #loginForm input {
+        width: 250px;
+    }
+
+    #loginForm input[type="checkbox"],
+    #loginForm input[type="submit"],
+    #loginForm input[type="button"],
+    #loginForm button {
+        width: auto;
+    }
+
+#socialLoginForm {
+    margin-left: 40px;
+    float: left;
+    width: 40%;
+}
+
+    #socialLoginForm h2 {
+        margin-bottom:  5px;
+    }
+
+#socialLoginList button {
+    margin-bottom: 12px;
+}
+
+#logoutForm {
+    display: inline;
+}
+
+/* contact */
+.contact h3 {
+    font-size: 1.2em;
+}
+
+.contact p {
+    margin: 5px 0 0 10px;
+}
+
+.contact iframe {
+    border: 1px solid #333;
+    margin: 5px 0 0 10px;
+}
+
+/* forms */
+fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+    fieldset legend {
+        display: none;
+    }
+
+    fieldset ol {
+        padding: 0;
+        list-style: none;
+    }
+
+        fieldset ol li {
+            padding-bottom: 5px;
+        }
+
+label {
+    display: block;
+    font-size: 1.2em;
+    font-weight: 600;
+}
+
+label.checkbox {
+    display: inline;
+}
+
+input, textarea {
+    border: 1px solid #e2e2e2;
+    background: #fff;
+    color: #333;
+    font-size: 1.2em;
+    margin: 5px 0 6px 0;
+    padding: 5px;
+    width: 300px;
+}
+
+textarea {
+    font-family: inherit;
+    width: 500px;
+}
+
+    input:focus, textarea:focus {
+        border: 1px solid #7ac0da;
+    }
+
+    input[type="checkbox"] {
+        background: transparent;
+        border: inherit;
+        width: auto;
+    }
+
+    input[type="submit"],
+    input[type="button"],
+    button {
+        background-color: #d3dce0;
+        border: 1px solid #787878;
+        cursor: pointer;
+        font-size: 1.2em;
+        font-weight: 600;
+        padding: 7px;
+        margin-right: 8px;
+        width: auto;
+    }
+
+    td input[type="submit"],
+    td input[type="button"],
+    td button {
+        font-size: 1em;
+        padding: 4px;
+        margin-right: 4px;
+    }
+
+/* info and errors */
+.message-info {
+    border: 1px solid;
+    clear: both;
+    padding: 10px 20px;
+}
+
+.message-error {
+    clear: both;
+    color: #e80c4d;
+    font-size: 1.1em;
+    font-weight: bold;
+    margin: 20px 0 10px 0;
+}
+
+.message-success {
+    color: #7ac0da;
+    font-size: 1.3em;
+    font-weight: bold;
+    margin: 20px 0 10px 0;
+}
+
+.error {
+    color: #e80c4d;
+}
+
+/* styles for validation helpers */
+.field-validation-error {
+    color: #e80c4d;
+    font-weight: bold;
+}
+
+.field-validation-valid {
+    display: none;
+}
+
+input.input-validation-error {
+    border: 1px solid #e80c4d;
+}
+
+input[type="checkbox"].input-validation-error {
+    border: 0 none;
+}
+
+.validation-summary-errors {
+    color: #e80c4d;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.validation-summary-valid {
+    display: none;
+}
+
+
+/* tables
+----------------------------------------------------------*/
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    margin-top: 0.75em;
+    border: 0 none;
+}
+
+th {
+    font-size: 1.2em;
+    text-align: left;
+    border: none 0px;
+    padding-left: 0;
+}
+
+    th a {
+        display: block;
+        position: relative;
+    }
+
+    th a:link, th a:visited, th a:active, th a:hover {
+        color: #333;
+        font-weight: 600;
+        text-decoration: none;
+        padding: 0;
+    }
+
+    th a:hover {
+        color: #000;
+    }
+
+    th.asc a, th.desc a {
+        margin-right: .75em;
+    }
+
+    th.asc a:after, th.desc a:after {
+        display: block;
+        position: absolute;
+        right: 0em;
+        top: 0;
+        font-size: 0.75em;
+    }
+
+    th.asc a:after {
+        content: '▲';
+    }
+
+    th.desc a:after {
+        content: '▼';
+    }
+
+td {
+    padding: 0.25em 2em 0.25em 0em;
+    border: 0 none;
+}
+
+tr.pager td {
+    padding: 0 0.25em 0 0;
+}
+
+
+/********************
+*   Mobile Styles   *
+********************/
+@media only screen and (max-width: 850px) {
+
+    /* header
+    ----------------------------------------------------------*/
+    header .float-left,
+    header .float-right {
+        float: none;
+    }
+
+    /* logo */
+    header .site-title {
+        margin: 10px;
+        text-align: center;
+    }
+
+    /* login */
+    #login {
+        font-size: .85em;
+        margin: 0 0 12px;
+        text-align: center;
+    }
+
+        #login ul {
+            margin: 5px 0;
+            padding: 0;
+        }
+
+        #login li {
+            display: inline;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        #login a {
+            background: none;
+            color: #999;
+            font-weight: 600;
+            margin: 2px;
+            padding: 0;
+        }
+
+        #login a:hover {
+            color: #333;
+        }
+
+    /* menu */
+    nav {
+        margin-bottom: 5px;
+    }
+
+    ul#menu {
+        margin: 0;
+        padding: 0;
+        text-align: center;
+    }
+
+        ul#menu li {
+            margin: 0;
+            padding: 0;
+        }
+
+
+    /* main layout
+    ----------------------------------------------------------*/
+    .main-content,
+    .featured + .main-content {
+        background-position: 10px 0;
+    }
+
+    .content-wrapper {
+        padding-right: 10px;
+        padding-left: 10px;
+    }
+
+    .featured .content-wrapper {
+        padding: 10px;
+    }
+
+    /* page content */
+    article, aside {
+        float: none;
+        width: 100%;
+    }
+
+    /* ordered list */
+    ol.round {
+        list-style-type: none;
+        padding-left: 0;
+    }
+
+        ol.round li {
+            padding-left: 10px;
+            margin: 25px 0;
+        }
+
+            ol.round li.zero,
+            ol.round li.one,
+            ol.round li.two,
+            ol.round li.three,
+            ol.round li.four,
+            ol.round li.five,
+            ol.round li.six,
+            ol.round li.seven,
+            ol.round li.eight,
+            ol.round li.nine {
+                background: none;
+            }
+
+     /* features */
+     section.feature {
+        float: none;
+        padding: 10px;
+        width: auto;
+     }
+
+        section.feature img {
+            color: #999;
+            content: attr(alt);
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+
+    /* forms */
+    input {
+        width: 90%;
+    }
+
+    /* login page */
+    #loginForm {
+        border-right: none;
+        float: none;
+        width: auto;
+    }
+
+        #loginForm .validation-error {
+            display: block;
+            margin-left: 15px;
+        }
+
+    #socialLoginForm {
+        margin-left: 0;
+        float: none;
+        width: auto;
+    }
+
+
+    /* footer
+    ----------------------------------------------------------*/
+    footer .float-left,
+    footer .float-right {
+        float: none;
+    }
+
+    footer {
+        text-align: center;
+        height: auto;
+        padding: 10px 0;
+    }
+
+        footer p {
+            margin: 0;
+        }
+}
+
+
+
+
+Views/Shared/_Layout.cshtml
+
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>@ViewBag.Title - My ASP.NET MVC Application</title>
+        <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+        <meta name="viewport" content="width=device-width" />
+        @Styles.Render("~/Content/css")
+        @Scripts.Render("~/bundles/modernizr")
+    </head>
+    <body>
+        <header>
+            <div class="content-wrapper">
+                <div class="float-left">
+                    <p class="site-title">@Html.ActionLink("your logo here", "Index", "Home")</p>
+                </div>
+                <div class="float-right">
+                    <section id="login">
+                        @Html.Partial("_LoginPartial")
+                    </section>
+                    <nav>
+                        <ul id="menu">
+                            <li>@Html.ActionLink("Home", "Index", "Home")</li>
+                            <li>@Html.ActionLink("About", "About", "Home")</li>
+                            <li>@Html.ActionLink("Contact", "Contact", "Home")</li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </header>
+        <div id="body">
+            @RenderSection("featured", required: false)
+            <section class="content-wrapper main-content clear-fix">
+                @RenderBody()
+            </section>
+        </div>
+        <footer>
+            <div class="content-wrapper">
+                <div class="float-left">
+                    <p>&copy; @DateTime.Now.Year - My ASP.NET MVC Application</p>
+                </div>
+            </div>
+        </footer>
+
+        @Scripts.Render("~/bundles/jquery")
+        @RenderSection("scripts", required: false)
+    </body>
+</html>
+
+
+
+
+Views/_ViewStart.cshtml
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+
+
+
+App_Start/BundleConfig.cs
+
+
+using System.Web;
+using System.Web.Optimization;
+
+namespace CalendarEx
+{
+    public class BundleConfig
+    {
+        // For more information on Bundling, visit http://go.microsoft.com/fwlink/?LinkId=254725
+        public static void RegisterBundles(BundleCollection bundles)
+        {
+            bundles.Add(new ScriptBundle("~/bundles/jquery").Include(
+                        "~/Scripts/jquery-{version}.js"));
+
+            bundles.Add(new ScriptBundle("~/bundles/jqueryui").Include(
+                        "~/Scripts/jquery-ui-{version}.js"));
+
+            bundles.Add(new ScriptBundle("~/bundles/jqueryval").Include(
+                        "~/Scripts/jquery.unobtrusive*",
+                        "~/Scripts/jquery.validate*"));
+
+            // Use the development version of Modernizr to develop with and learn from. Then, when you're
+            // ready for production, use the build tool at http://modernizr.com to pick only the tests you need.
+            bundles.Add(new ScriptBundle("~/bundles/modernizr").Include(
+                        "~/Scripts/modernizr-*"));
+
+            bundles.Add(new StyleBundle("~/Content/css").Include("~/Content/site.css"));
+
+            bundles.Add(new StyleBundle("~/Content/themes/base/css").Include(
+                        "~/Content/themes/base/jquery.ui.core.css",
+                        "~/Content/themes/base/jquery.ui.resizable.css",
+                        "~/Content/themes/base/jquery.ui.selectable.css",
+                        "~/Content/themes/base/jquery.ui.accordion.css",
+                        "~/Content/themes/base/jquery.ui.autocomplete.css",
+                        "~/Content/themes/base/jquery.ui.button.css",
+                        "~/Content/themes/base/jquery.ui.dialog.css",
+                        "~/Content/themes/base/jquery.ui.slider.css",
+                        "~/Content/themes/base/jquery.ui.tabs.css",
+                        "~/Content/themes/base/jquery.ui.datepicker.css",
+                        "~/Content/themes/base/jquery.ui.progressbar.css",
+                        "~/Content/themes/base/jquery.ui.theme.css"));
+        }
+    }
+}
+
+
+
+
+
+
+Content/themes/base
+
+
+jquery-ui.css
+jquery.ui.accordion.css
+jquery.ui.all.css
+jquery.ui.autocomplete.css
+jquery.ui.base.css
+jquery.ui.button.css
+jquery.ui.core.css
+jquery.ui.datepicker.css
+jquery.ui.dialog.css
+jquery.ui.progressbar.css
+jquery.ui.resizable.css
+jquery.ui.selectable.css
+jquery.ui.slider.css
+jquery.ui.tabs.css
+jquery.ui.theme.css
+
+
+
+Scripts
+
+
+_references.js
+Calendar.js
+jquery-1.8.2.intellisense.js
+jquery-1.8.2.js
+jquery-1.8.2.min.js
+jquery-ui-1.8.24.js
+jquery-ui-1.8.24.min.js
+jquery.unobtrusive-ajax.js
+jquery.unobtrusive-ajax.min.js
+jquery.validate-vsdoc.js
+jquery.validate.js
+jquery.validate.min.js
+jquery.validate.unobtrusive.js
+jquery.validate.unobtrusive.min.js
+knockout-2.2.0.debug.js
+knockout-2.2.0.js
+modernizr-2.6.2.js
+
+
+
+
+App_Start
+
+
+AuthConfig.cs
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Microsoft.Web.WebPages.OAuth;
+using CalendarEx.Models;
+
+namespace CalendarEx
+{
+    public static class AuthConfig
+    {
+        public static void RegisterAuth()
+        {
+            // To let users of this site log in using their accounts from other sites such as Microsoft, Facebook, and Twitter,
+            // you must update this site. For more information visit http://go.microsoft.com/fwlink/?LinkID=252166
+
+            //OAuthWebSecurity.RegisterMicrosoftClient(
+            //    clientId: "",
+            //    clientSecret: "");
+
+            //OAuthWebSecurity.RegisterTwitterClient(
+            //    consumerKey: "",
+            //    consumerSecret: "");
+
+            //OAuthWebSecurity.RegisterFacebookClient(
+            //    appId: "",
+            //    appSecret: "");
+
+            //OAuthWebSecurity.RegisterGoogleClient();
+        }
+    }
+}
+
+
+
+FilterConfig.cs
+
+
+using System.Web;
+using System.Web.Mvc;
+
+namespace CalendarEx
+{
+    public class FilterConfig
+    {
+        public static void RegisterGlobalFilters(GlobalFilterCollection filters)
+        {
+            filters.Add(new HandleErrorAttribute());
+        }
+    }
+}
+
+
+
+RouteConfig.cs
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using System.Web.Routing;
+
+namespace CalendarEx
+{
+    public class RouteConfig
+    {
+        public static void RegisterRoutes(RouteCollection routes)
+        {
+            routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
+
+            routes.MapRoute(
+                name: "Default",
+                url: "{controller}/{action}/{id}",
+                defaults: new { controller = "Home", action = "Index", id = UrlParameter.Optional }
+            );
+        }
+    }
+}
+
+
+
+WebApiConfig.cs
+
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web.Http;
+
+namespace CalendarEx
+{
+    public static class WebApiConfig
+    {
+        public static void Register(HttpConfiguration config)
+        {
+            config.Routes.MapHttpRoute(
+                name: "DefaultApi",
+                routeTemplate: "api/{controller}/{id}",
+                defaults: new { id = RouteParameter.Optional }
+            );
+
+            // Uncomment the following line of code to enable query support for actions with an IQueryable or IQueryable<T> return type.
+            // To avoid processing unexpected or malicious queries, use the validation settings on QueryableAttribute to validate incoming queries.
+            // For more information, visit http://go.microsoft.com/fwlink/?LinkId=279712.
+            //config.EnableQuerySupport();
+        }
+    }
+}
+
+
+
+Controllers/AccountController.cs
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Transactions;
+using System.Web;
+using System.Web.Mvc;
+using System.Web.Security;
+using DotNetOpenAuth.AspNet;
+using Microsoft.Web.WebPages.OAuth;
+using WebMatrix.WebData;
+using CalendarEx.Filters;
+using CalendarEx.Models;
+
+namespace CalendarEx.Controllers
+{
+    [Authorize]
+    [InitializeSimpleMembership]
+    public class AccountController : Controller
+    {
+        //
+        // GET: /Account/Login
+
+        [AllowAnonymous]
+        public ActionResult Login(string returnUrl)
+        {
+            ViewBag.ReturnUrl = returnUrl;
+            return View();
+        }
+
+        //
+        // POST: /Account/Login
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public ActionResult Login(LoginModel model, string returnUrl)
+        {
+            if (ModelState.IsValid && WebSecurity.Login(model.UserName, model.Password, persistCookie: model.RememberMe))
+            {
+                return RedirectToLocal(returnUrl);
+            }
+
+            // If we got this far, something failed, redisplay form
+            ModelState.AddModelError("", "The user name or password provided is incorrect.");
+            return View(model);
+        }
+
+        //
+        // POST: /Account/LogOff
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult LogOff()
+        {
+            WebSecurity.Logout();
+
+            return RedirectToAction("Index", "Home");
+        }
+
+        //
+        // GET: /Account/Register
+
+        [AllowAnonymous]
+        public ActionResult Register()
+        {
+            return View();
+        }
+
+        //
+        // POST: /Account/Register
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public ActionResult Register(RegisterModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                // Attempt to register the user
+                try
+                {
+                    WebSecurity.CreateUserAndAccount(model.UserName, model.Password);
+                    WebSecurity.Login(model.UserName, model.Password);
+                    return RedirectToAction("Index", "Home");
+                }
+                catch (MembershipCreateUserException e)
+                {
+                    ModelState.AddModelError("", ErrorCodeToString(e.StatusCode));
+                }
+            }
+
+            // If we got this far, something failed, redisplay form
+            return View(model);
+        }
+
+        //
+        // POST: /Account/Disassociate
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Disassociate(string provider, string providerUserId)
+        {
+            string ownerAccount = OAuthWebSecurity.GetUserName(provider, providerUserId);
+            ManageMessageId? message = null;
+
+            // Only disassociate the account if the currently logged in user is the owner
+            if (ownerAccount == User.Identity.Name)
+            {
+                // Use a transaction to prevent the user from deleting their last login credential
+                using (var scope = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions { IsolationLevel = IsolationLevel.Serializable }))
+                {
+                    bool hasLocalAccount = OAuthWebSecurity.HasLocalAccount(WebSecurity.GetUserId(User.Identity.Name));
+                    if (hasLocalAccount || OAuthWebSecurity.GetAccountsFromUserName(User.Identity.Name).Count > 1)
+                    {
+                        OAuthWebSecurity.DeleteAccount(provider, providerUserId);
+                        scope.Complete();
+                        message = ManageMessageId.RemoveLoginSuccess;
+                    }
+                }
+            }
+
+            return RedirectToAction("Manage", new { Message = message });
+        }
+
+        //
+        // GET: /Account/Manage
+
+        public ActionResult Manage(ManageMessageId? message)
+        {
+            ViewBag.StatusMessage =
+                message == ManageMessageId.ChangePasswordSuccess ? "Your password has been changed."
+                : message == ManageMessageId.SetPasswordSuccess ? "Your password has been set."
+                : message == ManageMessageId.RemoveLoginSuccess ? "The external login was removed."
+                : "";
+            ViewBag.HasLocalPassword = OAuthWebSecurity.HasLocalAccount(WebSecurity.GetUserId(User.Identity.Name));
+            ViewBag.ReturnUrl = Url.Action("Manage");
+            return View();
+        }
+
+        //
+        // POST: /Account/Manage
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Manage(LocalPasswordModel model)
+        {
+            bool hasLocalAccount = OAuthWebSecurity.HasLocalAccount(WebSecurity.GetUserId(User.Identity.Name));
+            ViewBag.HasLocalPassword = hasLocalAccount;
+            ViewBag.ReturnUrl = Url.Action("Manage");
+            if (hasLocalAccount)
+            {
+                if (ModelState.IsValid)
+                {
+                    // ChangePassword will throw an exception rather than return false in certain failure scenarios.
+                    bool changePasswordSucceeded;
+                    try
+                    {
+                        changePasswordSucceeded = WebSecurity.ChangePassword(User.Identity.Name, model.OldPassword, model.NewPassword);
+                    }
+                    catch (Exception)
+                    {
+                        changePasswordSucceeded = false;
+                    }
+
+                    if (changePasswordSucceeded)
+                    {
+                        return RedirectToAction("Manage", new { Message = ManageMessageId.ChangePasswordSuccess });
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("", "The current password is incorrect or the new password is invalid.");
+                    }
+                }
+            }
+            else
+            {
+                // User does not have a local password so remove any validation errors caused by a missing
+                // OldPassword field
+                ModelState state = ModelState["OldPassword"];
+                if (state != null)
+                {
+                    state.Errors.Clear();
+                }
+
+                if (ModelState.IsValid)
+                {
+                    try
+                    {
+                        WebSecurity.CreateAccount(User.Identity.Name, model.NewPassword);
+                        return RedirectToAction("Manage", new { Message = ManageMessageId.SetPasswordSuccess });
+                    }
+                    catch (Exception)
+                    {
+                        ModelState.AddModelError("", String.Format("Unable to create local account. An account with the name \"{0}\" may already exist.", User.Identity.Name));
+                    }
+                }
+            }
+
+            // If we got this far, something failed, redisplay form
+            return View(model);
+        }
+
+        //
+        // POST: /Account/ExternalLogin
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public ActionResult ExternalLogin(string provider, string returnUrl)
+        {
+            return new ExternalLoginResult(provider, Url.Action("ExternalLoginCallback", new { ReturnUrl = returnUrl }));
+        }
+
+        //
+        // GET: /Account/ExternalLoginCallback
+
+        [AllowAnonymous]
+        public ActionResult ExternalLoginCallback(string returnUrl)
+        {
+            AuthenticationResult result = OAuthWebSecurity.VerifyAuthentication(Url.Action("ExternalLoginCallback", new { ReturnUrl = returnUrl }));
+            if (!result.IsSuccessful)
+            {
+                return RedirectToAction("ExternalLoginFailure");
+            }
+
+            if (OAuthWebSecurity.Login(result.Provider, result.ProviderUserId, createPersistentCookie: false))
+            {
+                return RedirectToLocal(returnUrl);
+            }
+
+            if (User.Identity.IsAuthenticated)
+            {
+                // If the current user is logged in add the new account
+                OAuthWebSecurity.CreateOrUpdateAccount(result.Provider, result.ProviderUserId, User.Identity.Name);
+                return RedirectToLocal(returnUrl);
+            }
+            else
+            {
+                // User is new, ask for their desired membership name
+                string loginData = OAuthWebSecurity.SerializeProviderUserId(result.Provider, result.ProviderUserId);
+                ViewBag.ProviderDisplayName = OAuthWebSecurity.GetOAuthClientData(result.Provider).DisplayName;
+                ViewBag.ReturnUrl = returnUrl;
+                return View("ExternalLoginConfirmation", new RegisterExternalLoginModel { UserName = result.UserName, ExternalLoginData = loginData });
+            }
+        }
+
+        //
+        // POST: /Account/ExternalLoginConfirmation
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public ActionResult ExternalLoginConfirmation(RegisterExternalLoginModel model, string returnUrl)
+        {
+            string provider = null;
+            string providerUserId = null;
+
+            if (User.Identity.IsAuthenticated || !OAuthWebSecurity.TryDeserializeProviderUserId(model.ExternalLoginData, out provider, out providerUserId))
+            {
+                return RedirectToAction("Manage");
+            }
+
+            if (ModelState.IsValid)
+            {
+                // Insert a new user into the database
+                using (UsersContext db = new UsersContext())
+                {
+                    UserProfile user = db.UserProfiles.FirstOrDefault(u => u.UserName.ToLower() == model.UserName.ToLower());
+                    // Check if user already exists
+                    if (user == null)
+                    {
+                        // Insert name into the profile table
+                        db.UserProfiles.Add(new UserProfile { UserName = model.UserName });
+                        db.SaveChanges();
+
+                        OAuthWebSecurity.CreateOrUpdateAccount(provider, providerUserId, model.UserName);
+                        OAuthWebSecurity.Login(provider, providerUserId, createPersistentCookie: false);
+
+                        return RedirectToLocal(returnUrl);
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("UserName", "User name already exists. Please enter a different user name.");
+                    }
+                }
+            }
+
+            ViewBag.ProviderDisplayName = OAuthWebSecurity.GetOAuthClientData(provider).DisplayName;
+            ViewBag.ReturnUrl = returnUrl;
+            return View(model);
+        }
+
+        //
+        // GET: /Account/ExternalLoginFailure
+
+        [AllowAnonymous]
+        public ActionResult ExternalLoginFailure()
+        {
+            return View();
+        }
+
+        [AllowAnonymous]
+        [ChildActionOnly]
+        public ActionResult ExternalLoginsList(string returnUrl)
+        {
+            ViewBag.ReturnUrl = returnUrl;
+            return PartialView("_ExternalLoginsListPartial", OAuthWebSecurity.RegisteredClientData);
+        }
+
+        [ChildActionOnly]
+        public ActionResult RemoveExternalLogins()
+        {
+            ICollection<OAuthAccount> accounts = OAuthWebSecurity.GetAccountsFromUserName(User.Identity.Name);
+            List<ExternalLogin> externalLogins = new List<ExternalLogin>();
+            foreach (OAuthAccount account in accounts)
+            {
+                AuthenticationClientData clientData = OAuthWebSecurity.GetOAuthClientData(account.Provider);
+
+                externalLogins.Add(new ExternalLogin
+                {
+                    Provider = account.Provider,
+                    ProviderDisplayName = clientData.DisplayName,
+                    ProviderUserId = account.ProviderUserId,
+                });
+            }
+
+            ViewBag.ShowRemoveButton = externalLogins.Count > 1 || OAuthWebSecurity.HasLocalAccount(WebSecurity.GetUserId(User.Identity.Name));
+            return PartialView("_RemoveExternalLoginsPartial", externalLogins);
+        }
+
+        #region Helpers
+        private ActionResult RedirectToLocal(string returnUrl)
+        {
+            if (Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+            else
+            {
+                return RedirectToAction("Index", "Home");
+            }
+        }
+
+        public enum ManageMessageId
+        {
+            ChangePasswordSuccess,
+            SetPasswordSuccess,
+            RemoveLoginSuccess,
+        }
+
+        internal class ExternalLoginResult : ActionResult
+        {
+            public ExternalLoginResult(string provider, string returnUrl)
+            {
+                Provider = provider;
+                ReturnUrl = returnUrl;
+            }
+
+            public string Provider { get; private set; }
+            public string ReturnUrl { get; private set; }
+
+            public override void ExecuteResult(ControllerContext context)
+            {
+                OAuthWebSecurity.RequestAuthentication(Provider, ReturnUrl);
+            }
+        }
+
+        private static string ErrorCodeToString(MembershipCreateStatus createStatus)
+        {
+            // See http://go.microsoft.com/fwlink/?LinkID=177550 for
+            // a full list of status codes.
+            switch (createStatus)
+            {
+                case MembershipCreateStatus.DuplicateUserName:
+                    return "User name already exists. Please enter a different user name.";
+
+                case MembershipCreateStatus.DuplicateEmail:
+                    return "A user name for that e-mail address already exists. Please enter a different e-mail address.";
+
+                case MembershipCreateStatus.InvalidPassword:
+                    return "The password provided is invalid. Please enter a valid password value.";
+
+                case MembershipCreateStatus.InvalidEmail:
+                    return "The e-mail address provided is invalid. Please check the value and try again.";
+
+                case MembershipCreateStatus.InvalidAnswer:
+                    return "The password retrieval answer provided is invalid. Please check the value and try again.";
+
+                case MembershipCreateStatus.InvalidQuestion:
+                    return "The password retrieval question provided is invalid. Please check the value and try again.";
+
+                case MembershipCreateStatus.InvalidUserName:
+                    return "The user name provided is invalid. Please check the value and try again.";
+
+                case MembershipCreateStatus.ProviderError:
+                    return "The authentication provider returned an error. Please verify your entry and try again. If the problem persists, please contact your system administrator.";
+
+                case MembershipCreateStatus.UserRejected:
+                    return "The user creation request has been canceled. Please verify your entry and try again. If the problem persists, please contact your system administrator.";
+
+                default:
+                    return "An unknown error occurred. Please verify your entry and try again. If the problem persists, please contact your system administrator.";
+            }
+        }
+        #endregion
+    }
+}
+
+
+
+Filters/InitializeSimpleMembershipAttribute.cs
+
+
+
+using System;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
+using System.Threading;
+using System.Web.Mvc;
+using WebMatrix.WebData;
+using CalendarEx.Models;
+
+namespace CalendarEx.Filters
+{
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
+    public sealed class InitializeSimpleMembershipAttribute : ActionFilterAttribute
+    {
+        private static SimpleMembershipInitializer _initializer;
+        private static object _initializerLock = new object();
+        private static bool _isInitialized;
+
+        public override void OnActionExecuting(ActionExecutingContext filterContext)
+        {
+            // Ensure ASP.NET Simple Membership is initialized only once per app start
+            LazyInitializer.EnsureInitialized(ref _initializer, ref _isInitialized, ref _initializerLock);
+        }
+
+        private class SimpleMembershipInitializer
+        {
+            public SimpleMembershipInitializer()
+            {
+                Database.SetInitializer<UsersContext>(null);
+
+                try
+                {
+                    using (var context = new UsersContext())
+                    {
+                        if (!context.Database.Exists())
+                        {
+                            // Create the SimpleMembership database without Entity Framework migration schema
+                            ((IObjectContextAdapter)context).ObjectContext.CreateDatabase();
+                        }
+                    }
+
+                    WebSecurity.InitializeDatabaseConnection("DefaultConnection", "UserProfile", "UserId", "UserName", autoCreateTables: true);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException("The ASP.NET Simple Membership database could not be initialized. For more information, please see http://go.microsoft.com/fwlink/?LinkId=256588", ex);
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+Models/AccountModels.cs
+
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Data.Entity;
+using System.Globalization;
+using System.Web.Security;
+
+namespace CalendarEx.Models
+{
+    public class UsersContext : DbContext
+    {
+        public UsersContext()
+            : base("DefaultConnection")
+        {
+        }
+
+        public DbSet<UserProfile> UserProfiles { get; set; }
+    }
+
+    [Table("UserProfile")]
+    public class UserProfile
+    {
+        [Key]
+        [DatabaseGeneratedAttribute(DatabaseGeneratedOption.Identity)]
+        public int UserId { get; set; }
+        public string UserName { get; set; }
+    }
+
+    public class RegisterExternalLoginModel
+    {
+        [Required]
+        [Display(Name = "User name")]
+        public string UserName { get; set; }
+
+        public string ExternalLoginData { get; set; }
+    }
+
+    public class LocalPasswordModel
+    {
+        [Required]
+        [DataType(DataType.Password)]
+        [Display(Name = "Current password")]
+        public string OldPassword { get; set; }
+
+        [Required]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} characters long.", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "New password")]
+        public string NewPassword { get; set; }
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm new password")]
+        [Compare("NewPassword", ErrorMessage = "The new password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; }
+    }
+
+    public class LoginModel
+    {
+        [Required]
+        [Display(Name = "User name")]
+        public string UserName { get; set; }
+
+        [Required]
+        [DataType(DataType.Password)]
+        [Display(Name = "Password")]
+        public string Password { get; set; }
+
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
+    }
+
+    public class RegisterModel
+    {
+        [Required]
+        [Display(Name = "User name")]
+        public string UserName { get; set; }
+
+        [Required]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} characters long.", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Password")]
+        public string Password { get; set; }
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password")]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; }
+    }
+
+    public class ExternalLogin
+    {
+        public string Provider { get; set; }
+        public string ProviderDisplayName { get; set; }
+        public string ProviderUserId { get; set; }
+    }
+}
+
+
+
+
+
+Models/CalendarModel.cs
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+
+namespace CalendarEx.Models
+{
+    public class WeekForMonth
+    {
+        public List<Day> Week1 { get; set; } //days for week1
+        public List<Day> Week2 { get; set; } //days for week2
+        public List<Day> Week3 { get; set; } //days for week3
+        public List<Day> Week4 { get; set; } //days for week4
+        public List<Day> Week5 { get; set; } //days for week5
+        public List<Day> Week6 { get; set; } //days for week6
+        public List<Day> CWeek1 { get; set; } //days for week1
+        public List<Day> CWeek2 { get; set; } //days for week2
+        public List<Day> CWeek3 { get; set; } //days for week3
+        public List<Day> CWeek4 { get; set; } //days for week4
+        public List<Day> CWeek5 { get; set; } //days for week5
+        public List<Day> CWeek6 { get; set; } //days for week6
+        public string nextMonth { get; set; }
+        public string prevMonth { get; set; }
+        public string CnextMonth { get; set; }
+        public string CprevMonth { get; set; }
+
+        public int Numid { get; set; }
+        //public string Number { get; set; }
+        //public List<WeekForMonth> NumList { get; set; }
+        //public IEnumerable<SelectListItem> NumselectList { get; set; }
+
+        public int Dayid { get; set; }
+        //public string Dayname { get; set; }
+        //public List<WeekForMonth> DayList { get; set; }
+        //public IEnumerable<SelectListItem> DaySelectlist { get; set; }
+
+        public int Monthid { get; set; }
+        //public string Monthname { get; set; }
+        //public List<WeekForMonth> MonthList { get; set; }
+        //public IEnumerable<SelectListItem> MonthselectList { get; set; }
+
+        public string Date1 { get; set; }
+        public List<WeekForMonth> DateList { get; set; }
+    }
+
+    public class Day
+    {
+        public DateTime Date { get; set; }
+        public string _Date { get; set; }
+        public string dateStr { get; set; }
+        public int dtDay { get; set; }
+        public int? daycolumn { get; set; }
+
+    }
+}
+
+
